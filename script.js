@@ -152,11 +152,41 @@ const applicants = [
 ];
 
 const auditEntries = [
-  makeAudit("Application submitted", "Applicant", "Maria Santos", "Application submitted through applicant portal.", "2026-05-10T09:00:00"),
-  makeAudit("AI pre-screen completed", "System", "Maria Santos", "Eligibility checked and AI recommendation generated.", "2026-05-10T09:05:00"),
-  makeAudit("Profile reviewed", "Committee", "Maria Santos", "Applicant profile viewed by committee.", "2026-05-10T10:00:00"),
-  makeAudit("Notes added", "Committee", "Ana Cruz", "Evaluator notes saved.", "2026-05-10T10:30:00"),
-  makeAudit("Final decision saved", "SSC President", "Ana Cruz", "Approved by committee.", "2026-05-10T11:00:00"),
+  makeAudit(
+    "Application submitted",
+    "Applicant",
+    "Maria Santos",
+    "Application submitted through applicant portal.",
+    "2026-05-10T09:00:00",
+  ),
+  makeAudit(
+    "AI pre-screen completed",
+    "System",
+    "Maria Santos",
+    "Eligibility checked and AI recommendation generated.",
+    "2026-05-10T09:05:00",
+  ),
+  makeAudit(
+    "Profile reviewed",
+    "Committee",
+    "Maria Santos",
+    "Applicant profile viewed by committee.",
+    "2026-05-10T10:00:00",
+  ),
+  makeAudit(
+    "Notes added",
+    "Committee",
+    "Ana Cruz",
+    "Evaluator notes saved.",
+    "2026-05-10T10:30:00",
+  ),
+  makeAudit(
+    "Final decision saved",
+    "SSC President",
+    "Ana Cruz",
+    "Approved by committee.",
+    "2026-05-10T11:00:00",
+  ),
 ];
 
 let draftApplication = createEmptyDraft();
@@ -173,6 +203,34 @@ function renderApp() {
   if (state.screen === "application") renderApplicationSubmission();
   if (state.screen === "applicant-status") renderApplicantStatus();
   if (state.screen === "evaluator") renderEvaluatorShell();
+
+  updateHeaderAction();
+}
+
+function updateHeaderAction() {
+  const headerAction = document.getElementById("headerAction");
+  if (!headerAction) return;
+
+  if (state.screen === "login") {
+    headerAction.textContent = "◎";
+    headerAction.setAttribute("aria-label", "User account");
+    headerAction.onclick = null;
+    return;
+  }
+
+  headerAction.textContent = "Logout";
+  headerAction.setAttribute("aria-label", "Logout");
+  headerAction.onclick = logout;
+}
+
+function logout() {
+  state.screen = "login";
+  state.role = "";
+  state.selectedApplicantId = null;
+  state.evaluatorView = "dashboard";
+  state.applicantView = "status";
+  renderApp();
+  showToast("Logged out. You can choose another role.");
 }
 
 function renderLogin() {
@@ -226,7 +284,8 @@ function handleLogin(event) {
   event.preventDefault();
   const role = new FormData(event.currentTarget).get("role");
   if (!role) {
-    document.getElementById("loginWarning").textContent = "Please select a role before logging in.";
+    document.getElementById("loginWarning").textContent =
+      "Please select a role before logging in.";
     return;
   }
   state.role = role;
@@ -277,10 +336,16 @@ function renderPrivacyNotice() {
 
 function acceptPrivacyConsent() {
   if (!document.getElementById("privacyConsent").checked) {
-    document.getElementById("consentWarning").textContent = "Please accept the consent notice before continuing.";
+    document.getElementById("consentWarning").textContent =
+      "Please accept the consent notice before continuing.";
     return;
   }
-  addAudit("Privacy consent accepted", "Applicant", "Draft Applicant", "Applicant accepted privacy and consent notice.");
+  addAudit(
+    "Privacy consent accepted",
+    "Applicant",
+    "Draft Applicant",
+    "Applicant accepted privacy and consent notice.",
+  );
   state.screen = "application";
   renderApp();
 }
@@ -332,7 +397,9 @@ function renderApplicationSubmission() {
       </form>
     </section>
   `;
-  document.getElementById("applicationForm").addEventListener("submit", submitApplication);
+  document
+    .getElementById("applicationForm")
+    .addEventListener("submit", submitApplication);
 }
 
 function textField(label, id, value, placeholder, extraClass = "") {
@@ -393,10 +460,30 @@ function submitApplication(event) {
   evaluateApplicant(newApplicant);
   applicants.unshift(newApplicant);
   state.selectedApplicantId = newApplicant.id;
-  addAudit("Application submitted", "Applicant", newApplicant.name, "Application and document statuses submitted.");
-  addAudit("Eligibility checked", "System", newApplicant.name, "Rule-based eligibility checking completed.");
-  addAudit("AI recommendation generated", "System", newApplicant.name, `${newApplicant.aiRecommendation} with score ${newApplicant.score}.`);
-  addAudit("AI pre-screen completed", "System", newApplicant.name, "Eligibility checked and AI recommendation generated.");
+  addAudit(
+    "Application submitted",
+    "Applicant",
+    newApplicant.name,
+    "Application and document statuses submitted.",
+  );
+  addAudit(
+    "Eligibility checked",
+    "System",
+    newApplicant.name,
+    "Rule-based eligibility checking completed.",
+  );
+  addAudit(
+    "AI recommendation generated",
+    "System",
+    newApplicant.name,
+    `${newApplicant.aiRecommendation} with score ${newApplicant.score}.`,
+  );
+  addAudit(
+    "AI pre-screen completed",
+    "System",
+    newApplicant.name,
+    "Eligibility checked and AI recommendation generated.",
+  );
   draftApplication = createEmptyDraft();
   state.screen = "applicant-status";
   renderApp();
@@ -434,7 +521,12 @@ function renderApplicantStatus() {
           <h3 class="section-title">Submission Status</h3>
           <ul class="checklist">
             <li><span class="check-icon">✓</span>Personal details submitted</li>
-            ${Object.entries(documentLabels).map(([key, label]) => `<li><span class="check-icon">${applicant.documents[key].uploaded ? "✓" : "!"}</span>${label} ${applicant.documents[key].uploaded ? "uploaded" : "missing"}</li>`).join("")}
+            ${Object.entries(documentLabels)
+              .map(
+                ([key, label]) =>
+                  `<li><span class="check-icon">${applicant.documents[key].uploaded ? "✓" : "!"}</span>${label} ${applicant.documents[key].uploaded ? "uploaded" : "missing"}</li>`,
+              )
+              .join("")}
           </ul>
         </div>
         ${badge(applicant.status, statusBadgeType(applicant.status))}
@@ -456,7 +548,13 @@ function renderApplicantStatus() {
 }
 
 function progressStep(step, status) {
-  const order = ["Application Submitted", "Eligibility Checking", "Committee Review", "Interview", "Final Decision"];
+  const order = [
+    "Application Submitted",
+    "Eligibility Checking",
+    "Committee Review",
+    "Interview",
+    "Final Decision",
+  ];
   const current = order.indexOf(status);
   const index = order.indexOf(step);
   const cls = index < current ? "done" : index === current ? "current" : "";
@@ -494,7 +592,10 @@ function sidebarButton(view, label, icon) {
 
 function showEvaluatorView(view) {
   state.evaluatorView = view;
-  state.selectedApplicantId = view === "applicants" ? state.selectedApplicantId : state.selectedApplicantId;
+  state.selectedApplicantId =
+    view === "applicants"
+      ? state.selectedApplicantId
+      : state.selectedApplicantId;
   renderEvaluatorShell();
 }
 
@@ -511,10 +612,20 @@ function renderEvaluatorContent() {
 function renderEvaluatorDashboard() {
   const content = document.getElementById("evaluatorContent");
   const total = applicants.length;
-  const eligible = applicants.filter((a) => a.eligibilityStatus === "Eligible").length;
-  const needsReview = applicants.filter((a) => ["Needs Further Review", "AI Recommended"].includes(a.aiRecommendation) || a.reviewStatus === "Needs Further Review").length;
-  const incomplete = applicants.filter((a) => a.requirementStatus !== "Complete").length;
-  const notEligible = applicants.filter((a) => a.eligibilityStatus === "Not Eligible").length;
+  const eligible = applicants.filter(
+    (a) => a.eligibilityStatus === "Eligible",
+  ).length;
+  const needsReview = applicants.filter(
+    (a) =>
+      ["Needs Further Review", "AI Recommended"].includes(a.aiRecommendation) ||
+      a.reviewStatus === "Needs Further Review",
+  ).length;
+  const incomplete = applicants.filter(
+    (a) => a.requirementStatus !== "Complete",
+  ).length;
+  const notEligible = applicants.filter(
+    (a) => a.eligibilityStatus === "Not Eligible",
+  ).length;
   content.innerHTML = `
     <div class="page-heading">
       <div>
@@ -535,13 +646,18 @@ function renderEvaluatorDashboard() {
         <table>
           <thead><tr><th>Name</th><th>Course</th><th>Status</th><th>Action</th></tr></thead>
           <tbody>
-            ${applicants.slice(0, 5).map((applicant) => `
+            ${applicants
+              .slice(0, 5)
+              .map(
+                (applicant) => `
               <tr>
                 <td>${applicant.name}</td>
                 <td>${applicant.course}</td>
                 <td>${badge(applicant.aiRecommendation, recommendationBadgeType(applicant.aiRecommendation))}</td>
                 <td><button class="btn btn-secondary btn-small" onclick="openProfile('${applicant.id}')">View</button></td>
-              </tr>`).join("")}
+              </tr>`,
+              )
+              .join("")}
           </tbody>
         </table>
       </div>
@@ -588,7 +704,14 @@ function renderApplicantList() {
       </table>
     </div>
   `;
-  ["eligibilityFilter", "requirementFilter", "recommendationFilter", "collegeFilter", "sortBy", "thenBy"].forEach((id) => {
+  [
+    "eligibilityFilter",
+    "requirementFilter",
+    "recommendationFilter",
+    "collegeFilter",
+    "sortBy",
+    "thenBy",
+  ].forEach((id) => {
     document.getElementById(id).addEventListener("change", renderApplicantRows);
   });
   renderApplicantRows();
@@ -611,10 +734,19 @@ function renderApplicantRows() {
     .filter((a) => !search || a.name.toLowerCase().includes(search))
     .filter((a) => eligibility === "All" || a.eligibilityStatus === eligibility)
     .filter((a) => requirement === "All" || a.requirementStatus === requirement)
-    .filter((a) => recommendation === "All" || a.aiRecommendation === recommendation)
+    .filter(
+      (a) => recommendation === "All" || a.aiRecommendation === recommendation,
+    )
     .filter((a) => college === "All" || a.college === college)
-    .sort((a, b) => sortBy === "Latest Submission" ? new Date(b.submittedAt) - new Date(a.submittedAt) : b.score - a.score);
-  tbody.innerHTML = filtered.map((applicant, index) => `
+    .sort((a, b) =>
+      sortBy === "Latest Submission"
+        ? new Date(b.submittedAt) - new Date(a.submittedAt)
+        : b.score - a.score,
+    );
+  tbody.innerHTML =
+    filtered
+      .map(
+        (applicant, index) => `
     <tr>
       <td>${index + 1}</td>
       <td><div class="applicant-name">${applicant.name}</div><div class="subtext">${applicant.id}</div></td>
@@ -624,14 +756,22 @@ function renderApplicantRows() {
       <td>${badge(applicant.aiRecommendation, recommendationBadgeType(applicant.aiRecommendation))}</td>
       <td><button class="btn btn-primary btn-small" onclick="openProfile('${applicant.id}')">View Profile</button></td>
     </tr>
-  `).join("") || `<tr><td colspan="7" class="empty-state">No applicants match the current filters.</td></tr>`;
+  `,
+      )
+      .join("") ||
+    `<tr><td colspan="7" class="empty-state">No applicants match the current filters.</td></tr>`;
 }
 
 function openProfile(id) {
   state.selectedApplicantId = id;
   state.evaluatorView = "profile";
   const applicant = getSelectedApplicant();
-  addAudit("Profile reviewed", "Committee", applicant.name, "Applicant profile viewed by evaluator.");
+  addAudit(
+    "Profile reviewed",
+    "Committee",
+    applicant.name,
+    "Applicant profile viewed by evaluator.",
+  );
   renderEvaluatorShell();
 }
 
@@ -659,7 +799,12 @@ function renderApplicantProfile() {
       <section class="profile-card">
         <h3>Requirement Checklist</h3>
         <ul class="checklist">
-          ${Object.entries(documentLabels).map(([key, label]) => `<li><span class="check-icon">${applicant.documents[key].uploaded ? "✓" : "!"}</span>${label}</li>`).join("")}
+          ${Object.entries(documentLabels)
+            .map(
+              ([key, label]) =>
+                `<li><span class="check-icon">${applicant.documents[key].uploaded ? "✓" : "!"}</span>${label}</li>`,
+            )
+            .join("")}
         </ul>
       </section>
       <section class="profile-card">
@@ -775,10 +920,12 @@ function decisionRadio(value, current) {
 
 function saveReview(finalize) {
   const applicant = getSelectedApplicant();
-  const humanDecision = document.querySelector("input[name='humanDecision']:checked")?.value || "";
+  const humanDecision =
+    document.querySelector("input[name='humanDecision']:checked")?.value || "";
   const reason = valueOf("decisionReason");
   if (humanDecision === "Override AI Recommendation" && !reason) {
-    document.getElementById("reviewWarning").textContent = "Override reason is required before saving an override.";
+    document.getElementById("reviewWarning").textContent =
+      "Override reason is required before saving an override.";
     return;
   }
   applicant.reviewStatus = valueOf("reviewStatus");
@@ -787,16 +934,37 @@ function saveReview(finalize) {
   applicant.humanDecision = humanDecision;
   applicant.decisionReason = reason;
   if (humanDecision === "Override AI Recommendation") {
-    addAudit("AI recommendation overridden", officerName, applicant.name, reason);
+    addAudit(
+      "AI recommendation overridden",
+      officerName,
+      applicant.name,
+      reason,
+    );
     addAudit("Override recorded", officerName, applicant.name, reason);
   }
   if (finalize) {
-    applicant.committeeDecision = finalCommitteeDecision(humanDecision, applicant);
-    applicant.status = applicant.reviewStatus === "For Interview" ? "Interview" : "Final Decision";
-    addAudit("Final decision saved", officerName, applicant.name, applicant.committeeDecision);
+    applicant.committeeDecision = finalCommitteeDecision(
+      humanDecision,
+      applicant,
+    );
+    applicant.status =
+      applicant.reviewStatus === "For Interview"
+        ? "Interview"
+        : "Final Decision";
+    addAudit(
+      "Final decision saved",
+      officerName,
+      applicant.name,
+      applicant.committeeDecision,
+    );
     showToast("Final committee decision saved.");
   } else {
-    addAudit("Notes added", officerName, applicant.name, applicant.evaluatorNotes || "Committee review notes saved.");
+    addAudit(
+      "Notes added",
+      officerName,
+      applicant.name,
+      applicant.evaluatorNotes || "Committee review notes saved.",
+    );
     showToast("Review notes saved.");
   }
   evaluateApplicant(applicant);
@@ -805,9 +973,14 @@ function saveReview(finalize) {
 
 function finalCommitteeDecision(humanDecision, applicant) {
   if (humanDecision === "Reject Application") return "Rejected by committee";
-  if (humanDecision === "Mark as Needs Further Review") return "Needs further review";
-  if (humanDecision === "Override AI Recommendation") return `Override: ${applicant.decisionReason || "Committee override"}`;
-  if (humanDecision === "Confirm AI recommendation") return applicant.aiRecommendation.includes("Recommended") ? "Approved by committee" : "Confirmed for further review";
+  if (humanDecision === "Mark as Needs Further Review")
+    return "Needs further review";
+  if (humanDecision === "Override AI Recommendation")
+    return `Override: ${applicant.decisionReason || "Committee override"}`;
+  if (humanDecision === "Confirm AI recommendation")
+    return applicant.aiRecommendation.includes("Recommended")
+      ? "Approved by committee"
+      : "Confirmed for further review";
   return "Pending final decision";
 }
 
@@ -828,13 +1001,17 @@ function renderFinalRanking() {
         <table>
           <thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>Final Committee Decision</th></tr></thead>
           <tbody>
-            ${finalList.map((applicant, index) => `
+            ${finalList
+              .map(
+                (applicant, index) => `
               <tr>
                 <td>${index + 1}</td>
                 <td>${applicant.name}</td>
                 <td>${applicant.score}</td>
                 <td>${applicant.committeeDecision}</td>
-              </tr>`).join("")}
+              </tr>`,
+              )
+              .join("")}
           </tbody>
         </table>
       </div>
@@ -861,14 +1038,21 @@ function renderAuditTrail() {
         <table>
           <thead><tr><th>Date/time</th><th>Action</th><th>User</th><th>Applicant</th><th>Notes</th></tr></thead>
           <tbody>
-            ${entries.map((entry) => `
+            ${
+              entries
+                .map(
+                  (entry) => `
               <tr>
                 <td>${formatDateTime(entry.dateTime)}</td>
                 <td>${entry.action}</td>
                 <td>${entry.user}</td>
                 <td>${entry.applicant}</td>
                 <td>${entry.notes}</td>
-              </tr>`).join("") || `<tr><td colspan="5" class="empty-state">No audit entries match this filter.</td></tr>`}
+              </tr>`,
+                )
+                .join("") ||
+              `<tr><td colspan="5" class="empty-state">No audit entries match this filter.</td></tr>`
+            }
           </tbody>
         </table>
       </div>
@@ -904,19 +1088,51 @@ function renderSettings() {
 /* Eligibility and AI simulation */
 function evaluateApplicant(applicant) {
   const checks = [
-    { label: "Currently enrolled", passed: applicant.eligibility.enrolled, critical: true },
-    { label: "Proof of employment submitted", passed: applicant.eligibility.workingStudent && applicant.documents.employmentProof.uploaded, critical: true },
-    { label: "No failing grades", passed: applicant.eligibility.noFailingGrades, critical: true },
-    { label: "Not a major scholarship beneficiary", passed: !applicant.eligibility.fullScholarship, critical: true },
-    { label: "No previous assistance record", passed: !applicant.eligibility.previousRecipient, critical: true },
-    { label: "Certificate of Indigency / ITR submitted", passed: applicant.documents.indigency.uploaded, critical: false },
-    { label: "Required documents complete", passed: documentsComplete(applicant), critical: false },
+    {
+      label: "Currently enrolled",
+      passed: applicant.eligibility.enrolled,
+      critical: true,
+    },
+    {
+      label: "Proof of employment submitted",
+      passed:
+        applicant.eligibility.workingStudent &&
+        applicant.documents.employmentProof.uploaded,
+      critical: true,
+    },
+    {
+      label: "No failing grades",
+      passed: applicant.eligibility.noFailingGrades,
+      critical: true,
+    },
+    {
+      label: "Not a major scholarship beneficiary",
+      passed: !applicant.eligibility.fullScholarship,
+      critical: true,
+    },
+    {
+      label: "No previous assistance record",
+      passed: !applicant.eligibility.previousRecipient,
+      critical: true,
+    },
+    {
+      label: "Certificate of Indigency / ITR submitted",
+      passed: applicant.documents.indigency.uploaded,
+      critical: false,
+    },
+    {
+      label: "Required documents complete",
+      passed: documentsComplete(applicant),
+      critical: false,
+    },
   ];
   const criticalFail = checks.some((check) => check.critical && !check.passed);
   const score = calculateScore(applicant);
   applicant.checks = checks;
   applicant.score = score;
-  applicant.requirementStatus = documentsComplete(applicant) ? "Complete" : "Incomplete";
+  applicant.requirementStatus = documentsComplete(applicant)
+    ? "Complete"
+    : "Incomplete";
   applicant.eligibilityStatus = criticalFail ? "Not Eligible" : "Eligible";
   applicant.aiRecommendation = getRecommendation(score, criticalFail);
   applicant.aiSummary = generateAiSummary(applicant);
@@ -925,7 +1141,11 @@ function evaluateApplicant(applicant) {
 function calculateScore(applicant) {
   let score = 0;
   if (applicant.eligibility.enrolled) score += 20;
-  if (applicant.eligibility.workingStudent && applicant.documents.employmentProof.uploaded) score += 20;
+  if (
+    applicant.eligibility.workingStudent &&
+    applicant.documents.employmentProof.uploaded
+  )
+    score += 20;
   if (applicant.eligibility.noFailingGrades) score += 15;
   if (!applicant.eligibility.fullScholarship) score += 20;
   if (applicant.documents.indigency.uploaded) score += 15;
@@ -942,15 +1162,25 @@ function getRecommendation(score, criticalFail) {
 }
 
 function generateAiSummary(applicant) {
-  const complete = documentsComplete(applicant) ? "submitted complete requirements" : "has incomplete requirements";
-  const grades = applicant.eligibility.noFailingGrades ? "has no failing grades" : "has a failing grade record";
-  const scholarship = applicant.eligibility.fullScholarship ? "is a full scholarship beneficiary" : "is not a full scholarship beneficiary";
-  const previous = applicant.eligibility.previousRecipient ? "has previously received this assistance" : "has not previously received this assistance";
+  const complete = documentsComplete(applicant)
+    ? "submitted complete requirements"
+    : "has incomplete requirements";
+  const grades = applicant.eligibility.noFailingGrades
+    ? "has no failing grades"
+    : "has a failing grade record";
+  const scholarship = applicant.eligibility.fullScholarship
+    ? "is a full scholarship beneficiary"
+    : "is not a full scholarship beneficiary";
+  const previous = applicant.eligibility.previousRecipient
+    ? "has previously received this assistance"
+    : "has not previously received this assistance";
   return `${applicant.name} is ${applicant.eligibility.enrolled ? "a currently enrolled" : "not confirmed as a currently enrolled"} student who ${applicant.eligibility.workingStudent ? "is a working student" : "does not meet the working student condition"} and ${complete}. The applicant ${grades}, ${scholarship}, and ${previous}. Based on rule-based screening, the application may be prioritized for committee review when requirements are satisfied. Final approval remains with the SSC committee.`;
 }
 
 function documentsComplete(applicant) {
-  return Object.values(applicant.documents).every((document) => document.uploaded);
+  return Object.values(applicant.documents).every(
+    (document) => document.uploaded,
+  );
 }
 
 /* Helpers */
@@ -982,7 +1212,9 @@ function createApplicationId() {
 }
 
 function getSelectedApplicant() {
-  return applicants.find((applicant) => applicant.id === state.selectedApplicantId);
+  return applicants.find(
+    (applicant) => applicant.id === state.selectedApplicantId,
+  );
 }
 
 function valueOf(id) {
@@ -998,9 +1230,11 @@ function badge(text, type) {
 }
 
 function recommendationBadgeType(recommendation) {
-  if (["Highly Recommended", "AI Recommended"].includes(recommendation)) return "good";
+  if (["Highly Recommended", "AI Recommended"].includes(recommendation))
+    return "good";
   if (recommendation === "Needs Further Review") return "warn";
-  if (["Not Recommended", "Not Eligible"].includes(recommendation)) return "bad";
+  if (["Not Recommended", "Not Eligible"].includes(recommendation))
+    return "bad";
   return "neutral";
 }
 
@@ -1015,7 +1249,13 @@ function addAudit(action, user, applicant, notes) {
   auditEntries.unshift(makeAudit(action, user, applicant, notes));
 }
 
-function makeAudit(action, user, applicant, notes, dateTime = new Date().toISOString()) {
+function makeAudit(
+  action,
+  user,
+  applicant,
+  notes,
+  dateTime = new Date().toISOString(),
+) {
   return { dateTime, action, user, applicant, notes };
 }
 

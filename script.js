@@ -1,9 +1,29 @@
 const app = document.getElementById("app");
-const officerName = "Committee Head";
+const demoAccounts = [
+  {
+    email: "committee@cmu.edu.ph",
+    password: "committee123",
+    role: "Committee Head",
+    name: "Committee Head",
+  },
+  {
+    email: "president@cmu.edu.ph",
+    password: "president123",
+    role: "SSC President",
+    name: "SSC President",
+  },
+  {
+    email: "applicant@cmu.edu.ph",
+    password: "applicant123",
+    role: "Applicant",
+    name: "Student Applicant",
+  },
+];
 
 const state = {
   screen: "login",
   role: "",
+  currentUser: null,
   showPassword: false,
   applicantView: "status",
   evaluatorView: "dashboard",
@@ -233,69 +253,9 @@ function logout() {
   showToast("Logged out. You can choose another role.");
 }
 
-function renderLogin() {
-  app.className = "app-root center-stage";
-  app.innerHTML = `
-    <section class="auth-card">
-      <div class="card-header">
-        <div class="brand-mark">CMU</div>
-        <h2>CMU SSC</h2>
-        <p>Working Student Financial Assistance System</p>
-      </div>
-      <div class="divider"></div>
-      <h3 class="section-title auth-title">Login to your account</h3>
-      <form class="form-grid single" id="loginForm">
-        <label class="field">Email Address
-          <input type="email" id="loginEmail" placeholder="Enter your email address" value="demo@cmu.edu.ph" />
-        </label>
-        <label class="field">Password
-          <div class="password-row">
-            <input type="${state.showPassword ? "text" : "password"}" id="loginPassword" placeholder="Enter your password" value="password" />
-            <button type="button" class="icon-btn" onclick="togglePassword()">${state.showPassword ? "Hide" : "Show"}</button>
-          </div>
-        </label>
-        <div class="radio-group">
-          <span>Role</span>
-          <div class="role-options">
-            ${roleOption("Committee Head")}
-            ${roleOption("SSC President")}
-            ${roleOption("Applicant")}
-          </div>
-        </div>
-        <p class="warning-text" id="loginWarning"></p>
-        <button class="btn btn-primary" type="submit">Login</button>
-        <button class="link-btn" type="button">Forgot password?</button>
-      </form>
-    </section>
-  `;
-  document.getElementById("loginForm").addEventListener("submit", handleLogin);
-}
-
-function roleOption(role) {
-  return `<label><input type="radio" name="role" value="${role}" ${state.role === role ? "checked" : ""} /> ${role}</label>`;
-}
-
 function togglePassword() {
   state.showPassword = !state.showPassword;
   renderLogin();
-}
-
-function handleLogin(event) {
-  event.preventDefault();
-  const role = new FormData(event.currentTarget).get("role");
-  if (!role) {
-    document.getElementById("loginWarning").textContent =
-      "Please select a role before logging in.";
-    return;
-  }
-  state.role = role;
-  if (role === "Applicant") {
-    state.screen = "privacy";
-  } else {
-    state.screen = "evaluator";
-    state.evaluatorView = "dashboard";
-  }
-  renderApp();
 }
 
 function renderPrivacyNotice() {
@@ -343,7 +303,7 @@ function acceptPrivacyConsent() {
   addAudit(
     "Privacy consent accepted",
     "Applicant",
-    "Draft Applicant",
+    state.currentUser?.name || "Student Applicant",
     "Applicant accepted privacy and consent notice.",
   );
   state.screen = "application";
@@ -629,7 +589,7 @@ function renderEvaluatorDashboard() {
   content.innerHTML = `
     <div class="page-heading">
       <div>
-        <h2 class="page-title">Welcome, ${state.role || "Committee Head"}</h2>
+        <h2 class="page-title">Welcome, ${state.currentUser?.name || state.role || "Committee Head"}</h2>
         <p class="body-muted">Review applications with AI-assisted summaries while keeping human decision-making final.</p>
       </div>
     </div>
@@ -888,21 +848,22 @@ function renderAiReview() {
           <label class="field">Interview Remarks
             <textarea id="interviewRemarks" placeholder="Enter interview remarks...">${applicant.interviewRemarks}</textarea>
           </label>
-          <div class="radio-group">
-            <span>Human Decision</span>
-            <div class="choice-row">
+          <label class="field">Evaluator Notes
+            <textarea id="evaluatorNotes" placeholder="Enter evaluator notes...">${applicant.evaluatorNotes}</textarea>
+          </label>
+          <section class="human-decision-panel">
+            <h4 class="human-decision-title">Final Human Decision</h4>
+            <p class="human-decision-note">This decision is made by the committee. The AI recommendation is advisory only.</p>
+            <div class="decision-options">
               ${decisionRadio("Confirm AI recommendation", applicant.humanDecision)}
               ${decisionRadio("Mark as Needs Further Review", applicant.humanDecision)}
               ${decisionRadio("Reject Application", applicant.humanDecision)}
               ${decisionRadio("Override AI Recommendation", applicant.humanDecision)}
             </div>
-          </div>
-          <label class="field">Evaluator Notes
-            <textarea id="evaluatorNotes" placeholder="Enter evaluator notes...">${applicant.evaluatorNotes}</textarea>
-          </label>
-          <label class="field full">Reason for Override / Decision
-            <textarea id="decisionReason" placeholder="Provide reason for override or decision...">${applicant.decisionReason}</textarea>
-          </label>
+            <label class="field decision-reason-field">Reason for Override / Decision
+              <textarea id="decisionReason" placeholder="Required for override or rejection. Add notes for other decisions as needed.">${applicant.decisionReason}</textarea>
+            </label>
+          </section>
         </div>
         <p class="warning-text" id="reviewWarning"></p>
         <div class="btn-row">
@@ -915,7 +876,19 @@ function renderAiReview() {
 }
 
 function decisionRadio(value, current) {
-  return `<label><input type="radio" name="humanDecision" value="${value}" ${current === value ? "checked" : ""} /> ${value}</label>`;
+  return `
+    <label class="decision-option ${current === value ? "selected" : ""}">
+      <input type="radio" name="humanDecision" value="${value}" ${current === value ? "checked" : ""} onchange="updateDecisionSelection()" />
+      <span>${value}</span>
+    </label>
+  `;
+}
+
+function updateDecisionSelection() {
+  document.querySelectorAll(".decision-option").forEach((option) => {
+    const input = option.querySelector("input");
+    option.classList.toggle("selected", Boolean(input?.checked));
+  });
 }
 
 function saveReview(finalize) {
@@ -923,9 +896,21 @@ function saveReview(finalize) {
   const humanDecision =
     document.querySelector("input[name='humanDecision']:checked")?.value || "";
   const reason = valueOf("decisionReason");
-  if (humanDecision === "Override AI Recommendation" && !reason) {
+  if (finalize && !humanDecision) {
     document.getElementById("reviewWarning").textContent =
-      "Override reason is required before saving an override.";
+      "Please select a final human decision before submitting.";
+    return;
+  }
+  if (
+    ["Override AI Recommendation", "Reject Application"].includes(
+      humanDecision,
+    ) &&
+    !reason
+  ) {
+    document.getElementById("reviewWarning").textContent =
+      humanDecision === "Reject Application"
+        ? "Reason for rejection is required before submitting this decision."
+        : "Override reason is required before saving an override.";
     return;
   }
   applicant.reviewStatus = valueOf("reviewStatus");
@@ -936,11 +921,11 @@ function saveReview(finalize) {
   if (humanDecision === "Override AI Recommendation") {
     addAudit(
       "AI recommendation overridden",
-      officerName,
+      getCurrentUserName(),
       applicant.name,
       reason,
     );
-    addAudit("Override recorded", officerName, applicant.name, reason);
+    addAudit("Override recorded", getCurrentUserName(), applicant.name, reason);
   }
   if (finalize) {
     applicant.committeeDecision = finalCommitteeDecision(
@@ -953,7 +938,7 @@ function saveReview(finalize) {
         : "Final Decision";
     addAudit(
       "Final decision saved",
-      officerName,
+      getCurrentUserName(),
       applicant.name,
       applicant.committeeDecision,
     );
@@ -961,7 +946,7 @@ function saveReview(finalize) {
   } else {
     addAudit(
       "Notes added",
-      officerName,
+      getCurrentUserName(),
       applicant.name,
       applicant.evaluatorNotes || "Committee review notes saved.",
     );
@@ -1274,6 +1259,100 @@ function showToast(message) {
   toast.classList.add("show");
   clearTimeout(showToast.timer);
   showToast.timer = setTimeout(() => toast.classList.remove("show"), 2600);
+}
+
+function getCurrentUserName() {
+  return state.currentUser?.name || state.currentUser?.role || "Committee Head";
+}
+
+function renderLogin() {
+  app.className = "app-root center-stage";
+  app.innerHTML = `
+    <section class="auth-card">
+      <div class="card-header">
+        <img src="./assets/logo.png" alt="CMU SSC Logo" class="brand-logo brand-logo-login" />
+        <h2>CMU SSC</h2>
+        <p>Working Student Financial Assistance System</p>
+      </div>
+      <div class="divider"></div>
+      <h3 class="section-title auth-title">Login to your account</h3>
+      <form class="form-grid single" id="loginForm">
+        <label class="field">Email Address
+          <input type="email" id="loginEmail" placeholder="Enter your email address" autocomplete="username" />
+        </label>
+        <label class="field">Password
+          <div class="password-row">
+            <input type="${state.showPassword ? "text" : "password"}" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" />
+            <button type="button" class="icon-btn" onclick="togglePassword()">${state.showPassword ? "Hide" : "Show"}</button>
+          </div>
+        </label>
+        <p class="warning-text" id="loginWarning"></p>
+        <button class="btn btn-primary" type="submit">Login</button>
+        <button class="link-btn" type="button">Forgot password?</button>
+      </form>
+      <aside class="demo-credentials">
+        <strong>Demo Credentials</strong>
+        <p>Applicant: applicant@cmu.edu.ph / applicant123</p>
+        <p>Committee Head: committee@cmu.edu.ph / committee123</p>
+        <p>SSC President: president@cmu.edu.ph / president123</p>
+      </aside>
+    </section>
+  `;
+  document.getElementById("loginForm").addEventListener("submit", handleLogin);
+}
+
+function handleLogin(event) {
+  event.preventDefault();
+  const email = valueOf("loginEmail").toLowerCase();
+  const password = valueOf("loginPassword");
+  const account = demoAccounts.find(
+    (demoAccount) =>
+      demoAccount.email.toLowerCase() === email &&
+      demoAccount.password === password,
+  );
+
+  if (!account) {
+    document.getElementById("loginWarning").textContent =
+      "Incorrect email or password. Use one of the static demo credentials.";
+    return;
+  }
+
+  state.currentUser = account;
+  state.role = account.role;
+  if (account.role === "Applicant") {
+    state.screen = "privacy";
+  } else {
+    state.screen = "evaluator";
+    state.evaluatorView = "dashboard";
+  }
+  renderApp();
+}
+
+function updateHeaderAction() {
+  const headerAction = document.getElementById("headerAction");
+  if (!headerAction) return;
+
+  if (state.screen === "login") {
+    headerAction.textContent = "Account";
+    headerAction.setAttribute("aria-label", "User account");
+    headerAction.onclick = null;
+    return;
+  }
+
+  headerAction.textContent = `${state.currentUser?.name || "User"} - Logout`;
+  headerAction.setAttribute("aria-label", "Logout");
+  headerAction.onclick = logout;
+}
+
+function logout() {
+  state.screen = "login";
+  state.role = "";
+  state.currentUser = null;
+  state.selectedApplicantId = null;
+  state.evaluatorView = "dashboard";
+  state.applicantView = "status";
+  renderApp();
+  showToast("Logged out. Use a demo account to sign in again.");
 }
 
 function escapeHtml(value) {

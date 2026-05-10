@@ -84,6 +84,30 @@ p {
   font-weight: 800;
 }
 
+.brand-logo {
+  display: block;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--gold);
+}
+
+.brand-logo-header {
+  width: 44px;
+  height: 44px;
+  max-width: none;
+}
+
+.brand-logo-login {
+  width: 96px;
+  height: 96px;
+  max-width: none;
+  margin: 0 auto 12px;
+  border: 3px solid var(--gold);
+  box-shadow: 0 8px 18px rgba(0, 102, 0, 0.15);
+}
+
 .header-brand h1 {
   margin: 0;
   color: var(--green-dark);
@@ -95,13 +119,15 @@ p {
 .user-icon {
   display: grid;
   place-items: center;
-  width: 38px;
+  min-width: 38px;
   height: 38px;
   border: 1px solid var(--line);
   border-radius: 50%;
   background: white;
   color: var(--green-dark);
-  font-size: 1.4rem;
+  padding: 0 12px;
+  font-size: 0.86rem;
+  font-weight: 600;
 }
 
 .app-root {
@@ -137,6 +163,26 @@ p {
 
 .card-header .brand-mark {
   margin: 0 auto 12px;
+}
+
+.demo-credentials {
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--gold);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  padding: 14px;
+}
+
+.demo-credentials strong {
+  color: var(--green-dark);
+  font-weight: 700;
+}
+
+.demo-credentials p {
+  margin: 7px 0 0;
+  color: #475569;
+  font-size: 0.9rem;
 }
 
 .card-header h2,
@@ -786,12 +832,66 @@ tr:last-child td {
 
 .review-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 260px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
 }
 
 .review-grid .field.full {
   grid-column: 1 / -1;
+}
+
+.human-decision-panel {
+  grid-column: 1 / -1;
+  border: 2px solid var(--green);
+  border-radius: 16px;
+  background: #f6faed;
+  padding: 18px;
+}
+
+.human-decision-title {
+  margin: 0;
+  color: var(--green-dark);
+  font-size: 1.08rem;
+  font-weight: 700;
+}
+
+.human-decision-note {
+  margin: 6px 0 14px;
+  color: #475569;
+}
+
+.decision-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.decision-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+  padding: 13px;
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.decision-option input {
+  width: 18px;
+  height: 18px;
+}
+
+.decision-option.selected {
+  border-color: var(--green);
+  background: #e9f8df;
+  box-shadow: 0 0 0 3px rgba(0, 102, 0, 0.08);
+}
+
+.decision-reason-field {
+  margin-top: 14px;
 }
 
 .audit-filters {
@@ -853,7 +953,8 @@ tr:last-child td {
   .cards-grid,
   .toolbar,
   .ai-review-grid,
-  .review-grid {
+  .review-grid,
+  .decision-options {
     display: block;
   }
 
@@ -877,7 +978,8 @@ tr:last-child td {
   .summary-card,
   .toolbar > *,
   .review-grid > *,
-  .ai-review-grid > * {
+  .ai-review-grid > *,
+  .decision-option {
     margin-top: 12px;
   }
 
